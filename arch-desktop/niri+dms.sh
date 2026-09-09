@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 1. 按照官网推荐安装全部包
+# 1. 按照官网推荐安装全部包+kitty终端+nautilus文件管理
 sudo pacman -Syu --needed --noconfirm \
     niri \
     xwayland-satellite \
@@ -13,6 +13,7 @@ sudo pacman -Syu --needed --noconfirm \
     qt6-multimedia-ffmpeg \
 	sddm \
 	kitty \
+	nautilus \
 
 # 2. 复制默认配置并屏蔽与 DMS 冲突的 Waybar
 mkdir -p ~/.config/niri
