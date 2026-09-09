@@ -11,7 +11,8 @@ sudo pacman -Syu --needed --noconfirm \
     matugen \
     cava \
     qt6-multimedia-ffmpeg \
-	gdm
+	sddm \
+	kitty \
 
 # 2. 复制默认配置并屏蔽与 DMS 冲突的 Waybar
 mkdir -p ~/.config/niri
@@ -22,4 +23,4 @@ sed -i 's/spawn-at-startup "waybar"/\/\/ spawn-at-startup "waybar"/' ~/.config/n
 systemctl --user add-wants niri.service dms
 
 # 4. 启用 GDM 图形登录管理器
-sudo systemctl enable gdm.service
+sudo systemctl enable sddm.service
