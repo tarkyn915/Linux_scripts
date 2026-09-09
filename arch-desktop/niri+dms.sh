@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 # 1. 按照官网推荐安装全部包
 sudo pacman -Syu --needed --noconfirm \
