@@ -32,7 +32,7 @@ sudo pacman -Syu --needed --noconfirm \
     sddm \
     ttf-jetbrains-mono-nerd \
     noto-fonts-cjk \
-    noto-fonts-emoji \ 
+    noto-fonts-emoji \
     wqy-microhei
 
 # 3. 绑定 systemd 用户服务自动托管 DMS
