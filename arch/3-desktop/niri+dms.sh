@@ -7,9 +7,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 RESET='\033[0m'
 
+# 1. 检查运行权限（必须以非 root 普通用户运行）
+if [ "$EUID" -eq 0 ]; then
+    echo -e "${RED}[ERROR] Do not run this script as root! Please run as your regular user with sudo access.${RESET}"
+    exit 1
+fi
+
 echo -e "${GREEN}=== Installing Niri + DankMaterialShell (Desktop Only) ===${RESET}"
 
-# 1. 仅安装合成器、XWayland、Portal、DMS 外壳及图形登录管理器
+# 2. 仅安装合成器、XWayland、Portal、DMS 外壳及图形登录管理器
 echo -e "${YELLOW}Installing compositor, shell, portals, and display manager...${RESET}"
 sudo pacman -Syu --needed --noconfirm \
     niri \
@@ -25,35 +31,18 @@ sudo pacman -Syu --needed --noconfirm \
     qt6-svg \
     sddm
 
-# 2. 复制并初始化 Niri 配置文件，屏蔽默认的 Waybar
-echo -e "${YELLOW}Configuring Niri config.kdl...${RESET}"
-mkdir -p "$HOME/.config/niri"
+# 2. 复制默认配置并屏蔽与 DMS 冲突的 Waybar
+mkdir -p ~/.config/niri
+[ ! -f ~/.config/niri/config.kdl ] && cp /usr/share/doc/niri/config.k>
+sed -i 's/spawn-at-startup "waybar"/\/\/ spawn-at-startup "waybar"/' >
 
-CONFIG_PATH="$HOME/.config/niri/config.kdl"
-if [ ! -f "$CONFIG_PATH" ]; then
-    if [ -f "/usr/share/doc/niri/config.kdl" ]; then
-        cp /usr/share/doc/niri/config.kdl "$CONFIG_PATH"
-        echo "Copied default config.kdl template."
-    else
-        echo -e "${RED}[WARNING] Template /usr/share/doc/niri/config.kdl not found.${RESET}"
-    fi
-fi
+# 3. 官网推荐方式：绑定 systemd 用户服务自动托管 DMS
+systemctl --user add-wants niri.service dms
 
-# 如果配置中包含 waybar 自启项，将其注释掉（避免与 DMS 顶栏冲突）
-if [ -f "$CONFIG_PATH" ]; then
-    sed -i 's|spawn-at-startup "waybar"|// spawn-at-startup "waybar"|g' "$CONFIG_PATH"
-fi
-
-# 3. 将 DMS 绑定到 niri.service，使其随桌面环境启动
-echo -e "${YELLOW}Binding DMS shell service to niri.service...${RESET}"
-if systemctl --user list-unit-files | grep -q "dms"; then
-    systemctl --user add-wants niri.service dms.service || true
-fi
-
-# 4. 启用 SDDM 显示管理器
+# 5. 启用 SDDM 显示管理器
 echo -e "${YELLOW}Enabling SDDM display manager...${RESET}"
 sudo systemctl enable sddm.service
 
 echo
 echo -e "${GREEN}=== Niri Desktop Setup Completed! ===${RESET}"
-echo "Next step: Run 4-software.sh to set up audio (PipeWire), fonts, terminal, and apps."
+echo "Next step: Run 4-software.sh to set up yay, audio, fonts, and apps."
