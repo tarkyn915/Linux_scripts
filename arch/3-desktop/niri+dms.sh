@@ -31,13 +31,20 @@ sudo pacman -Syu --needed --noconfirm \
     qt6-svg \
     sddm
 
-# 2. 复制默认配置并屏蔽与 DMS 冲突的 Waybar
-mkdir -p ~/.config/niri
-[ ! -f ~/.config/niri/config.kdl ] && cp /usr/share/doc/niri/config.k>
-sed -i 's/spawn-at-startup "waybar"/\/\/ spawn-at-startup "waybar"/' >
+# 3. 复制默认配置并屏蔽与 DMS 冲突的 Waybar
+echo -e "${YELLOW}Configuring Niri config.kdl...${RESET}"
+mkdir -p "$HOME/.config/niri"
+if [ ! -f "$HOME/.config/niri/config.kdl" ]; then
+    cp /usr/share/doc/niri/config.kdl "$HOME/.config/niri/config.kdl"
+fi
 
-# 3. 官网推荐方式：绑定 systemd 用户服务自动托管 DMS
-systemctl --user add-wants niri.service dms
+if [ -f "$HOME/.config/niri/config.kdl" ]; then
+    sed -i 's|spawn-at-startup "waybar"|// spawn-at-startup "waybar"|g' "$HOME/.config/niri/config.kdl"
+fi
+
+# 4. 官网推荐方式：绑定 systemd 用户服务自动托管 DMS
+echo -e "${YELLOW}Binding DMS shell service to niri.service...${RESET}"
+systemctl --user add-wants niri.service dms.service || true
 
 # 5. 启用 SDDM 显示管理器
 echo -e "${YELLOW}Enabling SDDM display manager...${RESET}"
