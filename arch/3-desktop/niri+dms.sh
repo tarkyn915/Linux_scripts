@@ -15,7 +15,7 @@ fi
 
 echo -e "${GREEN}=== Installing Niri + DankMaterialShell (Desktop Only) ===${RESET}"
 
-# 2. 仅安装合成器、XWayland、Portal、DMS 外壳及图形登录管理器
+# 2. 仅安装合成器、XWayland、Portal、DMS 外壳及图形登录管理器 and fonts
 echo -e "${YELLOW}Installing compositor, shell, portals, and display manager...${RESET}"
 sudo pacman -Syu --needed --noconfirm \
     niri \
@@ -29,7 +29,11 @@ sudo pacman -Syu --needed --noconfirm \
     qt6-multimedia-ffmpeg \
     qt6-declarative \
     qt6-svg \
-    sddm
+    sddm \
+    ttf-jetbrains-mono-nerd \
+    noto-fonts-cjk \
+    noto-fonts-emoji \ 
+    wqy-microhei
 
 # 3. 绑定 systemd 用户服务自动托管 DMS
 echo -e "${YELLOW}Binding DMS shell service to niri.service...${RESET}"

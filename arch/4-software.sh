@@ -1,23 +1,28 @@
 #!/usr/bin/env bash
 set -e
 
-# 终端样式定义
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 RESET='\033[0m'
 
-echo -e "${GREEN}=== Setting up Base Audio, Fonts, Terminal, Yay & Input Method ===${RESET}"
+echo -e "${GREEN}=== Setting up Base Audio, Terminal, Yay & Input Method ===${RESET}"
 echo
 
-# 1. 检查运行权限（必须以非 root 普通用户运行）
+# 1. 检查是否为普通用户运行
 if [ "$EUID" -eq 0 ]; then
-    echo -e "${RED}[ERROR] Do not run this script as root! Please run as your regular user with sudo access.${RESET}"
+    echo -e "${RED}[ERROR] Do not run this script as root! Please run as your regular user.${RESET}"
     exit 1
 fi
 
-# 2. 安装通用底层、yay 与常用软件
-echo -e "${YELLOW}Installing packages (yay, pipewire, fonts, terminal, fcitx5)...${RESET}"
+# 2. 移除 jack2，避免后续安装 pipewire-jack 时因交互确认被 abort
+if pacman -Qq jack2 &>/dev/null; then
+    echo -e "${YELLOW}==> Removing jack2 to allow pipewire-jack installation...${RESET}"
+    sudo pacman -Rdd --noconfirm jack2
+fi
+
+# 3. 安装完整软件包列表（字体已在 3-desktop 阶段装好）
+echo -e "${YELLOW}==> 1. Installing all packages...${RESET}"
 sudo pacman -Syu --needed --noconfirm \
     yay \
     pipewire \
@@ -26,11 +31,6 @@ sudo pacman -Syu --needed --noconfirm \
     pipewire-alsa \
     pipewire-jack \
     pavucontrol \
-    ttf-jetbrains-mono-nerd \
-    noto-fonts-cjk \
-    noto-fonts-emoji \
-    wqy-microhei \
-    alacritty \
     kitty \
     nautilus \
     gvfs \
@@ -43,32 +43,31 @@ sudo pacman -Syu --needed --noconfirm \
     fcitx5-pinyin-zhwiki \
     fcitx5-chinese-addons \
     fcitx5-rime \
-    rime-ice
+    rime-ice \
+    git \
+    stow \
+    firefox
 
-# 3. 配置 yay 走清华大学 AUR 镜像源
-echo -e "${YELLOW}Configuring yay AUR mirror...${RESET}"
-yay --aururl "https://aur.tuna.tsinghua.edu.cn" --save
+# 4. 配置 Rime 官方推荐雾凇拼音补丁
+echo -e "${YELLOW}==> 2. Configuring Rime default.custom.yaml...${RESET}"
+RIME_DIR="$HOME/.local/share/fcitx5/rime"
+mkdir -p "$RIME_DIR"
 
-# 4. 启用 PipeWire 用户级音频服务
-echo -e "${YELLOW}Enabling PipeWire audio user services...${RESET}"
-systemctl --user enable --now pipewire.service wireplumber.service pipewire-pulse.service 2>/dev/null || true
-
-# 5. 配置 Fcitx5 全局环境变量
-echo -e "${YELLOW}Configuring Fcitx5 environment variables (/etc/environment)...${RESET}"
-sudo tee -a /etc/environment > /dev/null << 'EOF'
-
-# Fcitx5 Input Method Configuration
-GTK_IM_MODULE=fcitx
-QT_IM_MODULE=fcitx
-XMODIFIERS=@im=fcitx
-SDL_IM_MODULE=fcitx
-GLFW_IM_MODULE=ibus
+cat << 'EOF' > "$RIME_DIR/default.custom.yaml"
+patch:
+  __include: rime_ice_suggestion:/
+  __patch:
+    key_binder/bindings/+:
+      - { when: paging, accept: comma, send: Page_Up }
+      - { when: has_menu, accept: period, send: Page_Down }
 EOF
 
-# 6. 配置 Fcitx5 默认加载 Rime (雾凇拼音)
-echo -e "${YELLOW}Initializing Fcitx5 user profile...${RESET}"
-mkdir -p "$HOME/.config/fcitx5"
-cat << 'EOF' > "$HOME/.config/fcitx5/profile"
+# 5. 配置 Fcitx5 默认激活 Rime 方案
+echo -e "${YELLOW}==> 3. Setting up fcitx5 profile...${RESET}"
+FCITX5_CONFIG_DIR="$HOME/.config/fcitx5"
+mkdir -p "$FCITX5_CONFIG_DIR"
+
+cat << 'EOF' > "$FCITX5_CONFIG_DIR/profile"
 [Groups/0]
 Name=Default
 Default Layout=us
@@ -86,13 +85,14 @@ Layout=
 0=Default
 EOF
 
-# 7. 刷新系统字体缓存
-echo -e "${YELLOW}Updating font cache...${RESET}"
-fc-cache -fv > /dev/null
+# 6. 清理可能残留的输入法环境变量，保持系统原生行为
+sudo sed -i '/GTK_IM_MODULE/d' /etc/environment 2>/dev/null || true
+sudo sed -i '/QT_IM_MODULE/d' /etc/environment 2>/dev/null || true
+sudo sed -i '/XMODIFIERS/d' /etc/environment 2>/dev/null || true
 
-echo
-echo -e "${GREEN}=== Software Setup Complete! ===${RESET}"
-echo "Notes:"
-echo "1. 'yay' is installed from archlinuxcn and configured with Tsinghua AUR mirror."
-echo "2. Audio (PipeWire) user services are now running."
-echo "3. Fcitx5 + rime-ice setup is ready. Log out or reboot to apply environment variables."
+# 7. 重启 Fcitx5 触发雾凇拼音部署
+echo -e "${YELLOW}==> 4. Deploying Rime schema...${RESET}"
+killall fcitx5 2>/dev/null || true
+fcitx5 -d >/dev/null 2>&1 || true
+
+echo -e "${GREEN}=== All software and rime-ice setup complete! ===${RESET}"
