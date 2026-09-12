@@ -38,7 +38,8 @@ PKG_AUDIO=(
 
 # 3. 终端、浏览器与点文件管理
 PKG_APPS=(
-    kitty                   # GPU 加速终端
+    ghostty                 # GPU 加速终端
+    starship                # 终端提示符工具
     firefox                 # 保底浏览器
     stow                    # 符号链接与 dotfiles 管理工具
 )
